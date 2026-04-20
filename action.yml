@@ -30,7 +30,7 @@ runs:
     - name: Resolve dependencies and render template
       shell: bash
       run: |
-        uv run --with pyyaml "${{ github.action_path }}/scripts/resolve_deps.py" \
+        uv run --with pyyaml "${GITHUB_ACTION_PATH}/scripts/resolve_deps.py" \
           --template-dir "${{ inputs.working-directory }}" \
           --rendered-dir "${{ inputs.rendered-dir }}" \
           --copier-args "${{ inputs.copier-args }}"
