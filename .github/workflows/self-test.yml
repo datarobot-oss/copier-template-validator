@@ -22,14 +22,14 @@ jobs:
       image: ghcr.io/astral-sh/uv:python3.11-bookworm
     steps:
       - name: Checkout copier-template-validator
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: ./validator
 
       - name: Checkout af-component-agent
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          repository: datarobot-oss/af-component-agent
+          repository: datarobot-community/af-component-agent
           path: ./af-component-agent
 
       - name: Render template
