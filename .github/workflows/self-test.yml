@@ -1,0 +1,79 @@
+---
+name: Self Test
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "action.yml"
+      - "scripts/**"
+      - ".github/workflows/self-test.yml"
+  pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  self-test:
+    name: "Validate af-component-agent (base)"
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/astral-sh/uv:python3.11-bookworm
+    steps:
+      - name: Checkout copier-template-validator
+        uses: actions/checkout@v4
+        with:
+          path: ./validator
+
+      - name: Checkout af-component-agent
+        uses: actions/checkout@v4
+        with:
+          repository: datarobot-oss/af-component-agent
+          path: ./af-component-agent
+
+      - name: Render template
+        uses: ./validator
+        with:
+          working-directory: ./af-component-agent
+          rendered-dir: ./rendered/agent_generic_base
+          copier-args: '--defaults --data agent_app_name=agent_generic_base --data agent_template_framework=base --data base_answers_file=.datarobot/answers/base.yml'
+
+      - name: Copy fixture files
+        shell: bash
+        run: |
+          cp ./af-component-agent/fixtures/Taskfile.yml ./rendered/agent_generic_base/Taskfile.yml
+          cp ./af-component-agent/fixtures/infra/Taskfile.yml ./rendered/agent_generic_base/infra/Taskfile.yml
+          cp ./af-component-agent/fixtures/infra/pyproject.toml ./rendered/agent_generic_base/infra/pyproject.toml
+          cp ./af-component-agent/fixtures/infra/__init__.py ./rendered/agent_generic_base/infra/infra/__init__.py
+          cp ./af-component-agent/fixtures/infra/Pulumi.yaml ./rendered/agent_generic_base/infra/Pulumi.yaml
+          cp ./af-component-agent/fixtures/infra/llm.py ./rendered/agent_generic_base/infra/infra/llm.py
+          cp ./af-component-agent/fixtures/infra/mcp_server.py ./rendered/agent_generic_base/infra/infra/mcp_server.py
+
+      - name: Check lock file
+        shell: bash
+        working-directory: ./rendered/agent_generic_base/agent_generic_base
+        run: uv lock --check
+        env:
+          UV_CACHE_DIR: /.uv_cache
+
+      - name: Install dependencies
+        shell: bash
+        working-directory: ./rendered/agent_generic_base
+        run: uvx --from go-task-bin task install
+        env:
+          UV_CACHE_DIR: /.uv_cache
+
+      - name: Run linter
+        shell: bash
+        working-directory: ./rendered/agent_generic_base
+        run: uvx --from go-task-bin task lint-check
+        env:
+          UV_CACHE_DIR: /.uv_cache
+
+      - name: Run unit tests
+        shell: bash
+        working-directory: ./rendered/agent_generic_base
+        run: uvx --from go-task-bin task test-coverage
+        env:
+          UV_CACHE_DIR: /.uv_cache
