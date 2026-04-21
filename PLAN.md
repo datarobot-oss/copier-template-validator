@@ -6,7 +6,7 @@ A GitHub Action (published to the Marketplace) that validates any AF-ecosystem C
 1. Reading its `copier-module.yaml` to discover dependencies
 2. Rendering each dependency in topological order to produce real answer files
 3. Rendering the target template with `--defaults`
-4. Running a user-specified list of commands against the rendered output
+4. The calling workflow then runs whatever steps it needs against the rendered output
 
 ---
 
@@ -20,14 +20,18 @@ A GitHub Action (published to the Marketplace) that validates any AF-ecosystem C
 ### Action Interface
 
 ```yaml
+# The action only renders — calling workflow owns post-render steps
 - uses: datarobot-oss/copier-template-validator@v1
   with:
+    working-directory: ./af-component-agent
+    rendered-dir: ./rendered/agent_generic_base
     copier-args: '--defaults --data agent_template_framework=base'
-    actions: |
-      uv lock --check
-      uvx --from go-task-bin task install
-      uvx --from go-task-bin task lint-check
-      uvx --from go-task-bin task test-coverage
+
+# Calling workflow defines named steps after render
+- name: Install
+  run: uvx --from go-task-bin task install
+- name: Test
+  run: uvx --from go-task-bin task test-coverage
 ```
 
 ### Dependency Graph (frozen)
@@ -48,48 +52,54 @@ Max depth: 2 levels. af-base is always root.
 - Topologically sort deps (max 2 levels, no deep recursion needed)
 - Clone each dep, render it with `--defaults`, extract its `.datarobot/answers/*.yml`
 - Place answer files where the target template expects them before rendering
-- Replaces the current hardcoded fixture files in af-component-agent
-
-### What We're Stealing From af-component-agent
-- `.github/actions/render-copier-instance/action.yml` — the render logic
-- `fixtures/.datarobot/answers/*.yml` — the answer file format/shape
-- `fixtures/` structure — post-render file copies (Taskfile, infra scaffolding)
-- `afcomponentagent-framework-test.yaml` — the matrix CI pattern
+- Action runs inside `ghcr.io/astral-sh/uv:python3.11-bookworm` container (same as all AF component CIs)
 
 ---
 
 ## Phased Delivery
 
-| Phase | Work | Exit Criterion |
-|-------|------|----------------|
-| **1** | Repo skeleton + port existing render logic (static fixtures) | af-component-agent CI passes using the new action |
-| **2** | `resolve_deps.py` — dynamic dep resolution | Delete static fixtures, CI still green |
-| **3** | Roll out to all 5 components | All 5 component CIs green |
-| **4** | Tag `v1` release + Marketplace + Copier forum post | Action discoverable on Marketplace |
+| Phase | Work | Status |
+|-------|------|--------|
+| **1** | `action.yml` + `resolve_deps.py` + `self-test.yml` | ✅ Done — blocked on af-component-agent PR merge |
+| **2** | Self-test goes green end-to-end | ⏳ Blocked: `fix/copier-module-mcp-url` PR needs merge |
+| **3** | Roll out to all 5 components | 🔲 Not started |
+| **4** | Tag `v1` release + Marketplace + Copier forum post | 🔲 Not started |
 
 ---
 
-## Repo Structure (target)
+## Current Blocker
+
+PR open on af-component-agent: `fix/copier-module-mcp-url`
+- Fixes wrong mcp URL in `copier-module.yaml` (`af-component-fastmcp-server` → `af-component-datarobot-mcp`)
+- Fixes same URL in `README.md`
+- Fixes `langgprah` typo in `pyproject.toml.jinja`
+
+Until merged, self-test fails when cloning the mcp dependency.
+
+---
+
+## Repo Structure
 
 ```
 copier-template-validator/
 ├── action.yml                  ← GitHub Action entry point (composite)
 ├── scripts/
-│   ├── resolve_deps.py         ← reads copier-module.yaml, renders deps, produces answer files
-│   └── render_and_run.sh       ← renders main template + runs user-provided actions
+│   └── resolve_deps.py         ← reads copier-module.yaml, renders deps, produces answer files
 ├── tests/
-│   └── test_resolve_deps.py    ← unit tests for resolver logic
+│   └── test_resolve_deps.py    ← unit tests for resolver (not yet written)
 ├── .github/
 │   └── workflows/
 │       └── self-test.yml       ← validates the action against af-component-agent itself
 ├── PLAN.md
-└── README.md
+└── README.md                   ← not yet written
 ```
 
 ---
 
 ## Open Items
 
-- [ ] Repo URL confirmed: https://github.com/datarobot-oss/copier-template-validator.git
-- [ ] Inspect af-fastapi and af-react fixture file shapes (need access to those repos)
-- [ ] Confirm how `repeatable: true` deps name their answer files across components
+- [ ] af-component-agent `fix/copier-module-mcp-url` PR merged
+- [ ] Self-test goes green
+- [ ] Inspect af-fastapi and af-react fixture shapes before Phase 3
+- [ ] Write `tests/test_resolve_deps.py`
+- [ ] Write `README.md`
