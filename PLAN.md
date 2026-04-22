@@ -60,21 +60,10 @@ Max depth: 2 levels. af-base is always root.
 
 | Phase | Work | Status |
 |-------|------|--------|
-| **1** | `action.yml` + `resolve_deps.py` + `self-test.yml` | ✅ Done — blocked on af-component-agent PR merge |
-| **2** | Self-test goes green end-to-end | ⏳ Blocked: `fix/copier-module-mcp-url` PR needs merge |
+| **1** | `action.yml` + `resolve_deps.py` + `self-test.yml` | ✅ Done |
+| **2** | Self-test goes green end-to-end | ✅ Done |
 | **3** | Roll out to all 5 components | 🔲 Not started |
 | **4** | Tag `v1` release + Marketplace + Copier forum post | 🔲 Not started |
-
----
-
-## Current Blocker
-
-PR open on af-component-agent: `fix/copier-module-mcp-url`
-- Fixes wrong mcp URL in `copier-module.yaml` (`af-component-fastmcp-server` → `af-component-datarobot-mcp`)
-- Fixes same URL in `README.md`
-- Fixes `langgprah` typo in `pyproject.toml.jinja`
-
-Until merged, self-test fails when cloning the mcp dependency.
 
 ---
 
