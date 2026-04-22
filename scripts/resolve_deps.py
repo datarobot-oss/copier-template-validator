@@ -49,19 +49,20 @@ def get_answers_file_default(copier_yml: dict, dep_key: str) -> str | None:
     return default
 
 
-def find_rendered_answers_file(rendered_dir: Path) -> Path | None:
+def find_rendered_answers_file(rendered_dir: Path, placed_files: set[Path]) -> Path | None:
     """
     After rendering a dep, find the answers file it produced under
-    .datarobot/answers/. Each dep produces exactly one answers file.
+    .datarobot/answers/, excluding any files we placed there ourselves
+    (sub-dep answer files placed before rendering).
     """
     answers_dir = rendered_dir / ".datarobot" / "answers"
     if not answers_dir.exists():
         return None
-    files = list(answers_dir.glob("*.yml"))
+    files = [f for f in answers_dir.glob("*.yml") if f not in placed_files]
     if not files:
         return None
     if len(files) > 1:
-        print(f"Warning: found {len(files)} answer files in {answers_dir}, using {files[0].name}")
+        print(f"Warning: found {len(files)} candidate answer files in {answers_dir}, using {files[0].name}")
     print(f"  Found answers file: {files[0].name}")
     return files[0]
 
@@ -162,7 +163,8 @@ def main() -> None:
             dep_rendered_dir = tmp_dir / f"{dep_key}-rendered"
             dep_rendered_dir.mkdir(parents=True, exist_ok=True)
 
-            # Place sub-dep answer files before rendering
+            # Place sub-dep answer files before rendering, track what we place
+            placed_files: set[Path] = set()
             dep_copier_yml_path = clone_dir / "copier.yml"
             if dep_copier_yml_path.exists():
                 dep_copier_yml = read_yaml(dep_copier_yml_path)
@@ -178,13 +180,14 @@ def main() -> None:
                     dest = dep_rendered_dir / sub_answers_default
                     dest.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(already_rendered[sub_key], dest)
+                    placed_files.add(dest)
                     print(f"  Placed {sub_key} answers at {dest}")
 
             # Render the dep
             run(["uvx", "copier", "copy", str(clone_dir), str(dep_rendered_dir), "--defaults", "--overwrite"])
 
-            # Find the answers file it produced
-            answers_file = find_rendered_answers_file(dep_rendered_dir)
+            # Find the answers file it produced (excluding files we placed)
+            answers_file = find_rendered_answers_file(dep_rendered_dir, placed_files)
             if answers_file is None:
                 print(f"Warning: no answers file found after rendering {dep_key}")
                 continue
