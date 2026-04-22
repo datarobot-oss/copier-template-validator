@@ -12,10 +12,21 @@ concurrency:
 
 jobs:
   self-test:
-    name: "Validate af-component-agent (base)"
+    name: "Validate ${{ matrix.framework.agent_name }} (${{ matrix.python }})"
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/astral-sh/uv:python3.11-bookworm
+      image: ghcr.io/astral-sh/uv:${{ matrix.python }}-bookworm
+    strategy:
+      fail-fast: false
+      matrix:
+        python: [python3.11, python3.12, python3.13]
+        framework:
+          - { name: base,       agent_name: agent_generic_base, use_memory: "no" }
+          - { name: base,       agent_name: agent_with_memory,  use_memory: "yes" }
+          - { name: crewai,     agent_name: agent_crewai,       use_memory: "no" }
+          - { name: langgraph,  agent_name: agent_langgraph,    use_memory: "no" }
+          - { name: llamaindex, agent_name: agent_llamaindex,   use_memory: "no" }
+          - { name: nat,        agent_name: agent_nat,          use_memory: "no" }
     steps:
       - name: Checkout copier-template-validator
         uses: actions/checkout@v5
@@ -33,7 +44,7 @@ jobs:
         with:
           working-directory: ./af-component-agent
           rendered-dir: ./rendered
-          copier-args: '--defaults --data agent_app_name=agent_generic_base --data agent_template_framework=base --data base_answers_file=.datarobot/answers/base.yml'
+          copier-args: '--defaults --data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data use_agent_memory=${{ matrix.framework.use_memory }} --data base_answers_file=.datarobot/answers/base.yml'
 
       - name: Copy fixture files
         shell: bash
@@ -49,28 +60,28 @@ jobs:
 
       - name: Check lock file
         shell: bash
-        working-directory: ./rendered/agent_generic_base
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: uv lock --check
         env:
           UV_CACHE_DIR: /.uv_cache
 
       - name: Install dependencies
         shell: bash
-        working-directory: ./rendered/agent_generic_base
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: uvx --from go-task-bin task install
         env:
           UV_CACHE_DIR: /.uv_cache
 
       - name: Run linter
         shell: bash
-        working-directory: ./rendered/agent_generic_base
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: uvx --from go-task-bin task lint-check
         env:
           UV_CACHE_DIR: /.uv_cache
 
       - name: Run unit tests
         shell: bash
-        working-directory: ./rendered/agent_generic_base
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: uvx --from go-task-bin task test-coverage
         env:
           UV_CACHE_DIR: /.uv_cache
