@@ -32,7 +32,7 @@ jobs:
         uses: ./validator
         with:
           working-directory: ./af-component-agent
-          rendered-dir: ./rendered/agent_generic_base
+          rendered-dir: ./rendered
           copier-args: '--defaults --data agent_app_name=agent_generic_base --data agent_template_framework=base --data base_answers_file=.datarobot/answers/base.yml'
 
       - name: Copy fixture files
@@ -48,7 +48,7 @@ jobs:
 
       - name: Check lock file
         shell: bash
-        working-directory: ./rendered/agent_generic_base/agent_generic_base
+        working-directory: ./rendered/agent_generic_base
         run: uv lock --check
         env:
           UV_CACHE_DIR: /.uv_cache
