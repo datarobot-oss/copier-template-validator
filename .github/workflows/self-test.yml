@@ -38,13 +38,14 @@ jobs:
       - name: Copy fixture files
         shell: bash
         run: |
-          cp ./af-component-agent/fixtures/Taskfile.yml ./rendered/agent_generic_base/Taskfile.yml
-          cp ./af-component-agent/fixtures/infra/Taskfile.yml ./rendered/agent_generic_base/infra/Taskfile.yml
-          cp ./af-component-agent/fixtures/infra/pyproject.toml ./rendered/agent_generic_base/infra/pyproject.toml
-          cp ./af-component-agent/fixtures/infra/__init__.py ./rendered/agent_generic_base/infra/infra/__init__.py
-          cp ./af-component-agent/fixtures/infra/Pulumi.yaml ./rendered/agent_generic_base/infra/Pulumi.yaml
-          cp ./af-component-agent/fixtures/infra/llm.py ./rendered/agent_generic_base/infra/infra/llm.py
-          cp ./af-component-agent/fixtures/infra/mcp_server.py ./rendered/agent_generic_base/infra/infra/mcp_server.py
+          mkdir -p ./rendered/infra/infra
+          cp ./af-component-agent/fixtures/Taskfile.yml ./rendered/Taskfile.yml
+          cp ./af-component-agent/fixtures/infra/Taskfile.yml ./rendered/infra/Taskfile.yml
+          cp ./af-component-agent/fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
+          cp ./af-component-agent/fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
+          cp ./af-component-agent/fixtures/infra/Pulumi.yaml ./rendered/infra/Pulumi.yaml
+          cp ./af-component-agent/fixtures/infra/llm.py ./rendered/infra/infra/llm.py
+          cp ./af-component-agent/fixtures/infra/mcp_server.py ./rendered/infra/infra/mcp_server.py
 
       - name: Check lock file
         shell: bash
