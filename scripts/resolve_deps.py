@@ -100,6 +100,10 @@ def main() -> None:
     rendered_dir = args.rendered_dir.resolve()
     extra_copier_args = shlex.split(args.copier_args)
 
+    # Always ensure --defaults is present, but never duplicated
+    if "--defaults" not in extra_copier_args:
+        extra_copier_args = ["--defaults"] + extra_copier_args
+
     module_yaml_path = template_dir / "copier-module.yaml"
     copier_yml_path = template_dir / "copier.yml"
 
@@ -107,7 +111,7 @@ def main() -> None:
     if not module_yaml_path.exists():
         print("No copier-module.yaml found, rendering directly.")
         rendered_dir.mkdir(parents=True, exist_ok=True)
-        run(["uvx", "copier", "copy", str(template_dir), str(rendered_dir), "--defaults", "--overwrite"] + extra_copier_args)
+        run(["uvx", "copier", "copy", str(template_dir), str(rendered_dir), "--overwrite"] + extra_copier_args)
         return
 
     module = read_yaml(module_yaml_path)
@@ -116,7 +120,7 @@ def main() -> None:
     if not deps:
         print("No dependencies found in copier-module.yaml, rendering directly.")
         rendered_dir.mkdir(parents=True, exist_ok=True)
-        run(["uvx", "copier", "copy", str(template_dir), str(rendered_dir), "--defaults", "--overwrite"] + extra_copier_args)
+        run(["uvx", "copier", "copy", str(template_dir), str(rendered_dir), "--overwrite"] + extra_copier_args)
         return
 
     copier_yml = read_yaml(copier_yml_path) if copier_yml_path.exists() else {}
@@ -203,7 +207,7 @@ def main() -> None:
         # Final render of the main template
         print(f"\n── Rendering main template: {template_dir}")
         run(
-            ["uvx", "copier", "copy", str(template_dir), str(rendered_dir), "--defaults", "--overwrite"]
+            ["uvx", "copier", "copy", str(template_dir), str(rendered_dir), "--overwrite"]
             + extra_copier_args
         )
 
