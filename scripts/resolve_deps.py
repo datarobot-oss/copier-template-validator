@@ -13,6 +13,7 @@ Usage:
         --copier-args "--data agent_template_framework=base"
 """
 import argparse
+import os
 import shlex
 import shutil
 import subprocess
@@ -185,6 +186,24 @@ def main() -> None:
 
             # Render the dep
             run(["uvx", "copier", "copy", str(clone_dir), str(dep_rendered_dir), "--defaults", "--overwrite"])
+
+            # Copy dep rendered output into rendered-dir so symlinks from the main
+            # template (e.g. web/core -> ../core) resolve correctly.
+            # Done before the answers-file check so the copy always runs.
+            rendered_dir.mkdir(parents=True, exist_ok=True)
+            for item in dep_rendered_dir.iterdir():
+                if item.name == ".datarobot":
+                    continue
+                dest = rendered_dir / item.name
+                if item.is_symlink():
+                    if dest.exists() or dest.is_symlink():
+                        dest.unlink()
+                    os.symlink(os.readlink(item), dest)
+                elif item.is_dir():
+                    shutil.copytree(item, dest, dirs_exist_ok=True, symlinks=True)
+                else:
+                    shutil.copy2(item, dest)
+                print(f"  Copied dep output: {item.name} → {rendered_dir}")
 
             # Find the answers file it produced (excluding files we placed)
             answers_file = find_rendered_answers_file(dep_rendered_dir, placed_files)
