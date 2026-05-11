@@ -195,6 +195,19 @@ def main() -> None:
             already_rendered[dep_key] = answers_file
             print(f"  Produced answers: {answers_file.name}")
 
+            # Copy dep rendered output into rendered-dir so symlinks from the main
+            # template (e.g. web/core -> ../core) resolve correctly.
+            rendered_dir.mkdir(parents=True, exist_ok=True)
+            for item in dep_rendered_dir.iterdir():
+                if item.name == ".datarobot":
+                    continue
+                dest = rendered_dir / item.name
+                if item.is_dir():
+                    shutil.copytree(item, dest, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(item, dest)
+                print(f"  Copied dep output: {item.name} → {rendered_dir}")
+
         # Place all dep answer files into the rendered-dir before main render
         rendered_dir.mkdir(parents=True, exist_ok=True)
         for dep_key, answers_file in already_rendered.items():
