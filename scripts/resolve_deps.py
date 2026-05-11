@@ -13,6 +13,7 @@ Usage:
         --copier-args "--data agent_template_framework=base"
 """
 import argparse
+import os
 import shlex
 import shutil
 import subprocess
@@ -202,8 +203,10 @@ def main() -> None:
                 if item.name == ".datarobot":
                     continue
                 dest = rendered_dir / item.name
-                if item.is_dir():
-                    shutil.copytree(item, dest, dirs_exist_ok=True)
+                if item.is_symlink():
+                    os.symlink(os.readlink(item), dest)
+                elif item.is_dir():
+                    shutil.copytree(item, dest, dirs_exist_ok=True, symlinks=True)
                 else:
                     shutil.copy2(item, dest)
                 print(f"  Copied dep output: {item.name} → {rendered_dir}")
