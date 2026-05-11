@@ -187,17 +187,9 @@ def main() -> None:
             # Render the dep
             run(["uvx", "copier", "copy", str(clone_dir), str(dep_rendered_dir), "--defaults", "--overwrite"])
 
-            # Find the answers file it produced (excluding files we placed)
-            answers_file = find_rendered_answers_file(dep_rendered_dir, placed_files)
-            if answers_file is None:
-                print(f"Warning: no answers file found after rendering {dep_key}")
-                continue
-
-            already_rendered[dep_key] = answers_file
-            print(f"  Produced answers: {answers_file.name}")
-
             # Copy dep rendered output into rendered-dir so symlinks from the main
             # template (e.g. web/core -> ../core) resolve correctly.
+            # Done before the answers-file check so the copy always runs.
             rendered_dir.mkdir(parents=True, exist_ok=True)
             for item in dep_rendered_dir.iterdir():
                 if item.name == ".datarobot":
@@ -212,6 +204,15 @@ def main() -> None:
                 else:
                     shutil.copy2(item, dest)
                 print(f"  Copied dep output: {item.name} → {rendered_dir}")
+
+            # Find the answers file it produced (excluding files we placed)
+            answers_file = find_rendered_answers_file(dep_rendered_dir, placed_files)
+            if answers_file is None:
+                print(f"Warning: no answers file found after rendering {dep_key}")
+                continue
+
+            already_rendered[dep_key] = answers_file
+            print(f"  Produced answers: {answers_file.name}")
 
         # Place all dep answer files into the rendered-dir before main render
         rendered_dir.mkdir(parents=True, exist_ok=True)
