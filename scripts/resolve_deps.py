@@ -204,6 +204,8 @@ def main() -> None:
                     continue
                 dest = rendered_dir / item.name
                 if item.is_symlink():
+                    if dest.exists() or dest.is_symlink():
+                        dest.unlink()
                     os.symlink(os.readlink(item), dest)
                 elif item.is_dir():
                     shutil.copytree(item, dest, dirs_exist_ok=True, symlinks=True)
